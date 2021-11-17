@@ -1,29 +1,41 @@
 import Fluent
 import Vapor
 
-struct TodoController: RouteCollection {
-    func boot(routes: RoutesBuilder) throws {
-        let todos = routes.grouped("todos")
-        todos.get(use: index)
-        todos.post(use: create)
-        todos.group(":todoID") { todo in
-            todo.delete(use: delete)
+struct TodoController {
+    
+    private func getTodoIdParam(_ req: Request) throws -> UUID {
+        guard
+            let rawId = req.parameters.get("id"),
+            let id = UUID(rawId)
+        else {
+            throw Abort(.badRequest, reason: "Invalid parameter \"id\"")
         }
+        return id
     }
 
-    func index(req: Request) throws -> EventLoopFuture<[Todo]> {
-        return Todo.query(on: req.db).all()
-    }
-
-    func create(req: Request) throws -> EventLoopFuture<Todo> {
-        let todo = try req.content.decode(Todo.self)
-        return todo.save(on: req.db).map { todo }
-    }
-
-    func delete(req: Request) throws -> EventLoopFuture<HTTPStatus> {
-        return Todo.find(req.parameters.get("todoID"), on: req.db)
+    private func findTodoByIdParam(_ req: Request) throws -> EventLoopFuture<Todo> {
+        Todo
+            .find(try getTodoIdParam(req), on: req.db)
             .unwrap(or: Abort(.notFound))
-            .flatMap { $0.delete(on: req.db) }
-            .transform(to: .ok)
     }
+    
+    // MARK: - Endpoints
+    
+    func get(req: Request) throws -> EventLoopFuture<TodoGetObject> {
+        try findTodoByIdParam(req).map { $0.mapGet() }
+    }
+    
+    func list(req: Request) throws -> EventLoopFuture<Page<TodoListObject>> {
+        Todo
+            .query(on: req.db)
+            .paginate(for: req)
+            .map { $0.map { $0.mapList() } }
+    }
+    
+    func create(req: Request) throws -> EventLoopFuture<TodoGetObject> {
+       let input = try req.content.decode(TodoCreateObject.self)
+       let todo = Todo()
+       todo.create(input)
+       return todo.create(on: req.db).map { todo.mapGet() }
+   }
 }

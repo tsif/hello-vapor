@@ -1,13 +1,21 @@
 import Fluent
-import FluentPostgresDriver
+import FluentSQLiteDriver
 import Leaf
 import Vapor
 
 // configures your application
 public func configure(_ app: Application) throws {
-    // uncomment to serve files from /Public folder
-    // app.middleware.use(FileMiddleware(publicDirectory: app.directory.publicDirectory))
+    
+    app.http.server.configuration.hostname = "127.0.0.1"
+    app.http.server.configuration.port = 8081
+    
+    app.databases.use(.sqlite(.memory), as: .sqlite)
 
+    app.migrations.add(TodoMigation())
+    try app.autoMigrate().wait()
+    
     // register routes
-    try routes(app)
+    try TodoRouter().boot(routes: app.routes)
+    
+    app.views.use(.leaf)
 }
