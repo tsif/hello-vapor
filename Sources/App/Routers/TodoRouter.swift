@@ -11,14 +11,12 @@ struct TodoRouter: RouteCollection {
         let todoController = TodoController()
         let todoRoutes = routes.grouped("todos")
         
+        // GET /todos
+        // POST /todos
+        // GET /todos/:id
         todoRoutes.get(use: todoController.list)
         todoRoutes.post(use: todoController.create)
         todoRoutes.get(id, use: todoController.get)
-        
-        routes.get(use: indexHandler)
-    }
-    
-    func indexHandler(_ req: Request) -> EventLoopFuture<View> {
-        return req.view.render("index")
+        todoRoutes.delete(id, use: todoController.delete)
     }
 }

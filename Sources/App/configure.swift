@@ -7,7 +7,7 @@ import Vapor
 public func configure(_ app: Application) throws {
     
     app.http.server.configuration.hostname = "127.0.0.1"
-    app.http.server.configuration.port = 8081
+    app.http.server.configuration.port = 8080
     
     app.databases.use(.sqlite(.memory), as: .sqlite)
 
@@ -16,6 +16,7 @@ public func configure(_ app: Application) throws {
     
     // register routes
     try TodoRouter().boot(routes: app.routes)
+    try WebsiteRouter().boot(routes: app.routes)
     
     app.views.use(.leaf)
 }

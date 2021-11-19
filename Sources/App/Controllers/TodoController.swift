@@ -38,4 +38,12 @@ struct TodoController {
        todo.create(input)
        return todo.create(on: req.db).map { todo.mapGet() }
    }
+    
+    func delete(req: Request) throws -> EventLoopFuture<HTTPStatus> {
+        try findTodoByIdParam(req)
+        .flatMap({
+            $0.delete(on: req.db)
+        })
+        .map({ .ok})
+    }
 }
